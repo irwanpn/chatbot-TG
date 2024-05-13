@@ -1,0 +1,43 @@
+import requests
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
+# Telegram Bot Token
+TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+
+# Alpha Vantage API Key
+ALPHA_VANTAGE_API_KEY = "YOUR_ALPHA_VANTAGE_API_KEY"
+
+# Function to handle the /start command
+def start(update, context):
+    update.message.reply_text("Welcome to Finance Bot! Send /stock <symbol> to get the current stock price.")
+
+# Function to handle the /stock command
+def stock(update, context):
+    symbol = " ".join(context.args).upper()
+    price = get_stock_price(symbol)
+    if price:
+        update.message.reply_text(f"Current price of {symbol}: {price}")
+    else:
+        update.message.reply_text(f"Failed to fetch stock price for {symbol}.")
+
+# Function to get the current stock price using the Alpha Vantage API
+def get_stock_price(symbol):
+    url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol}&apikey={ALPHA_VANTAGE_API_KEY}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        price = data.get('Global Quote', {}).get('05. price')
+        return price if price else None
+    else:
+        return None
+
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("stock", stock))
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
